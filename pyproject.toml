@@ -1,11 +1,14 @@
 [project]
 name = "my-hello-agent"
 version = "0.1.0"
-requires-python = ">=3.14"
-dependencies = []
+requires-python = ">=3.12"
+dependencies = [
+    "openai>=2.30.0",
+    "python-dotenv>=1.2.2",
+]
 
 [project.scripts]
-my-hello-agent = "my_hello_agent:main"
+hello_agents_llm = "my_hello_agent.hello_agents_llm:main"
 
 [build-system]
 requires = ["uv_build>=0.10.8,<0.11.0"]

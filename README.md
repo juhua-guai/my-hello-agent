@@ -5,7 +5,7 @@ A minimal Python application managed with `uv`.
 ## Requirements
 
 - `uv`
-- Python `3.14`
+- Python `3.12`
 
 ## Getting started
 
