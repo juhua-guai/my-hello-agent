@@ -17,7 +17,6 @@ class HelloAgentsLLM:
         """
         初始化客户端。优先使用传入参数，如果未提供，则从环境变量加载。
         """
-        print("初始化LLM")
         self.model = model or os.getenv("LLM_MODEL_ID")
         api_key = api_key or os.getenv("LLM_API_KEY")
         base_url = base_url or os.getenv("LLM_BASE_URL")
