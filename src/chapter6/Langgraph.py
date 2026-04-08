@@ -19,6 +19,11 @@ class SearchState(TypedDict):
     search_results: str
     final_answer: str
     step: str
+    retry_count: int
+    max_retry: int
+    quality_score: int
+    decision: str
+    quality_reason: str
 
 
 load_dotenv()
@@ -46,17 +51,21 @@ def understand_query_node(state: SearchState) -> dict:
     理解：[用户需求总结]
     搜索词：[最佳搜索关键词]
     """
-    response = llm.invoke([SystemMessage(content=understand_prompt),HumanMessage(content=user_message)])
+    response = llm.invoke([SystemMessage(content=understand_prompt), HumanMessage(content=user_message)])
     response_text = response.content
     # 解析LLM的输出，提取搜索关键词
     search_query = user_message  # 默认使用原始查询
+    user_query = user_message
+    print(f"response_text == {response_text}")
+    if "理解：" in response_text:
+        user_query = response_text.split("理解：")[1].strip()
     if "搜索词：" in response_text:
         search_query = response_text.split("搜索词：")[1].strip()
     return {
-        "user_query": response_text,
+        "user_query": user_query,
         "search_query": search_query,
         "step": "understood",
-        "message": [AIMessage(content=f"我将为你搜索：{search_query}")]
+        "messages": [AIMessage(content=f"我将为你搜索：{search_query}")]
     }
 
 
@@ -100,7 +109,7 @@ def generate_answer_node(state: SearchState) -> SearchState:
         用户问题：{state['user_query']}
         请提供一个有用的回答，并说明这是基于已有知识的回答。
         """
-        response = llm.invoke(input=SystemMessage(content=fail_prompt), )
+        response = llm.invoke(input=[SystemMessage(content=fail_prompt), HumanMessage(content=state['user_query'])])
         return {
             "final_answer": response.content,
             "step": "completed",
@@ -131,17 +140,65 @@ def generate_answer_node(state: SearchState) -> SearchState:
     }
 
 
+def reflect_answer_node(state: SearchState) -> dict:
+    decision = "accept"
+    quality_score = 10
+    quality_reason = "接受答案"
+    step = "completed"
+    retry_count = state["retry_count"]
+    if state["retry_count"] >= state["max_retry"]:
+        decision = "force_accept"
+        quality_score -= 4
+        quality_reason = "强制接受"
+        step = "completed"
+    elif len(state["final_answer"]) < 80:
+        quality_score -= 2
+        quality_reason = "最终答案太短；"
+        retry_count += 1
+        if len(state["search_results"]) < 60:
+            decision = "research_again"
+            quality_score -= 3
+            quality_reason += "搜索结果太短；"
+            step = "retry_search"
+        else:
+            decision = "regenerate"
+            quality_score -= 1
+            quality_reason += "尝试重新生成答案；"
+            step = "retry_answer"
+    reflect_text = f"反思结论：{quality_reason}；决策：{decision}；质量分：{quality_score}"
+    return {
+        "decision": decision,
+        "step": step,
+        "retry_count": retry_count,
+        "quality_score": quality_score,
+        "quality_reason": quality_reason,
+        "messages": [AIMessage(content=reflect_text)]
+    }
+
+
+def route_after_reflect(state: SearchState) -> str:
+    return state.get("decision") or "force_accept"
+
+
 def create_search_assistant():
     workflow = StateGraph(SearchState)
     # 添加节点
     workflow.add_node("understand", understand_query_node)
     workflow.add_node("search", tavily_search_node)
     workflow.add_node("answer", generate_answer_node)
+    workflow.add_node("reflect", reflect_answer_node)
     # 添加节点的边
     workflow.add_edge(START, "understand")
     workflow.add_edge("understand", "search")
     workflow.add_edge("search", "answer")
-    workflow.add_edge("answer", END)
+    workflow.add_edge("answer", "reflect")
+    # 反思条件边
+    workflow.add_conditional_edges(
+        source="reflect",
+        path=route_after_reflect,
+        path_map={"accept": END, "regenerate": "answer", "research_again": "search", "force_accept": END}
+    )
+
     memory = InMemorySaver()
     app = workflow.compile(checkpointer=memory)
     return app
@@ -157,44 +214,49 @@ async def main():
 
     session_count = 0
 
-    while True:
-        print("请输入你想了解的内容: ")
-        user_input = input("")
-        if user_input.lower() in ['quit', 'q', '退出', 'exit']:
-            print("感谢使用！再见！👋")
-            break
+    print("请输入你想了解的内容: ")
+    user_input = input("")
+    if not user_input:
+        user_input = "明天南宁的天气怎么样？有哪些适合旅游的景点"
 
-        session_count += 1
-        config = {"configurable": {"thread_id": f"search-thread-{session_count}"}}
-        initial_state = {
-            "messages": [HumanMessage(content=user_input)],
-            "user_query": "",
-            "search_query": "",
-            "search_results": "",
-            "final_answer": "",
-            "step": ""
-        }
-        try:
-            print("\n" + "=" * 60)
+    session_count += 1
+    config = {"configurable": {"thread_id": f"search-thread-{session_count}"}}
+    initial_state = {
+        "messages": [HumanMessage(content=user_input)],
+        "user_query": "",
+        "search_query": "",
+        "search_results": "",
+        "final_answer": "",
+        "step": "",
+        "decision": "",
+        "retry_count": 0,
+        "quality_score": 10,
+        "quality_reason": "",
+        "max_retry": 3
+    }
+    try:
+        print("\n" + "=" * 60)
 
-            # 执行工作流
-            async for output in app.astream(initial_state, config=config):
-                for node_name, node_output in output.items():
-                    if "messages" in node_output and node_output["messages"]:
-                        latest_message = node_output["messages"][-1]
-                        if isinstance(latest_message, AIMessage):
-                            if node_name == "understand":
-                                print(f"🧠 理解阶段: {latest_message.content}")
-                            elif node_name == "search":
-                                print(f"🔍 搜索阶段: {latest_message.content}")
-                            elif node_name == "answer":
-                                print(f"\n💡 最终回答:\n{latest_message.content}")
+        # 执行工作流
+        async for output in app.astream(initial_state, config=config):
+            for node_name, node_output in output.items():
+                if "messages" in node_output and node_output["messages"]:
+                    latest_message = node_output["messages"][-1]
+                    if isinstance(latest_message, AIMessage):
+                        if node_name == "understand":
+                            print(f"🧠 理解阶段: {latest_message.content}")
+                        elif node_name == "search":
+                            print(f"🔍 搜索阶段: {latest_message.content}")
+                        elif node_name == "answer":
+                            print(f"\n💡 最终回答:\n{latest_message.content}")
+                        elif node_name == "reflect":
+                            print(f"\n💡 反思决策:\n{latest_message.content}")
 
-            print("\n" + "=" * 60 + "\n")
+        print("\n" + "=" * 60 + "\n")
 
-        except Exception as e:
-            print(f"❌ 发生错误: {e}")
-            print("请重新输入您的问题。\n")
+    except Exception as e:
+        print(f"❌ 发生错误: {e}")
+        print("请重新输入您的问题。\n")
 
 
 if __name__ == "__main__":
