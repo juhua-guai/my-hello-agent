@@ -3,11 +3,12 @@ from typing import Optional, Iterator
 
 from hello_agents import SimpleAgent, HelloAgentsLLM, ToolRegistry
 
+from chapter7.base_agent import BaseAgent
 from chapter7.config import Config
 from chapter7.message import Message
 
 
-class MySimpleAgent(SimpleAgent):
+class MySimpleAgent(BaseAgent):
     """
     重写的简单对话Agent
     展示如何基于框架积累构建自定义Agent
