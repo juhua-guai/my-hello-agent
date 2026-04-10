@@ -25,7 +25,7 @@ class BaseAgent(ABC):
         self._history: list[Message] = []
 
     @abstractmethod
-    def run(self, input_text: str, **kwargs) -> None:
+    def run(self, input_text: str, **kwargs) -> str:
         """运行"""
         pass
 

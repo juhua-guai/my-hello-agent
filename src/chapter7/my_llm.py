@@ -33,4 +33,4 @@ class MyLLM(HelloAgentsLLM):
             self.max_tokens = max_tokens or 64000
             self._client = OpenAI(api_key=self.api_key, base_url=self.base_url, timeout=self.timeout)
         else:
-            super().__init__(model=model, api_key=api_key, base_url=base_url, timeout=timeout)
+            super().__init__(model=model, api_key=api_key, base_url=base_url, timeout=timeout, **kwargs)
