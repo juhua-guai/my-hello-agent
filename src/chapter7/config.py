@@ -25,9 +25,9 @@ class Config(BaseModel):
         """从环境变量创建配置"""
         return cls(
             debug=os.getenv("DEBUG","false").lower() == "true",
-            log_level=os.getenv("LOG_LEVEL","info").upper(),
+            log_level=os.getenv("LOG_LEVEL","info"),
             temperature=float(os.getenv("TEMPERATURE","0.7")),
-            max_tokens=int(os.getenv("MAX_TOKENS")) if os.getenv("MAX_TOKENS") else None,
+            max_tokens=int(os.getenv("MAX_TOKENS") or 64000) if os.getenv("MAX_TOKENS") else None,
         )
 
     def to_dict(self)-> dict[str, Any]:

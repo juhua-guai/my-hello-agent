@@ -190,7 +190,7 @@ class MySimpleAgent(SimpleAgent):
         print("📝 实时响应: ", end="")
         for chunk in self.llm.stream_invoke(messages, **kwargs):
             full_response += chunk
-            print(chunk, end="", flush=True)
+            # print(chunk, end="", flush=True)
             yield chunk
 
         print()
@@ -207,7 +207,7 @@ class MySimpleAgent(SimpleAgent):
         self.tool_registry.register_tool(tool)
         print(f"🔧 工具 '{tool.name}' 已添加")
 
-    def has_tool(self) -> bool:
+    def has_tools(self) -> bool:
         return self.enable_tool_calling and self.tool_registry is not None
 
     def remove_tool(self, tool_name: str) -> bool:
@@ -216,7 +216,7 @@ class MySimpleAgent(SimpleAgent):
             return True
         return False
 
-    def list_tool(self) -> list:
+    def list_tools(self) -> list:
         """列出所有可用工具"""
         if self.tool_registry:
             return self.tool_registry.list_tools()
