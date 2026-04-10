@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Optional, Iterator
 
 from hello_agents import SimpleAgent, HelloAgentsLLM, ToolRegistry
 
@@ -169,3 +169,55 @@ class MySimpleAgent(SimpleAgent):
             else:
                 param_dict["input"] = parameters
         return param_dict
+
+    def stream_run(self, input_text: str, **kwargs) -> Iterator[str]:
+        """
+        自定义的流式运行方法
+        """
+        print(f"🌊 {self.name} 开始流式处理: {input_text}")
+
+        messages = []
+
+        if self.system_prompt:
+            messages.append(Message(content=self.system_prompt, role="system"))
+        for message in self._history:
+            messages.append({"role": message.role, "content": message.content})
+
+        messages.append(Message(content=input_text, role="user"))
+
+        # 流式调用LLM
+        full_response = ""
+        print("📝 实时响应: ", end="")
+        for chunk in self.llm.stream_invoke(messages, **kwargs):
+            full_response += chunk
+            print(chunk, end="", flush=True)
+            yield chunk
+
+        print()
+        # 保存完整对话到历史消息
+        self._history.append(Message(content=input_text, role="user"))
+        self._history.append(Message(content=full_response, role="assistant"))
+        print(f"✅ {self.name} 流式响应完成")
+
+    def add_tool(self, tool) -> None:
+        """添加工具到Agent（便利方法）"""
+        if not self.tool_registry:
+            self.tool_registry = ToolRegistry()
+            self.enable_tool_calling = True
+        self.tool_registry.register_tool(tool)
+        print(f"🔧 工具 '{tool.name}' 已添加")
+
+    def has_tool(self) -> bool:
+        return self.enable_tool_calling and self.tool_registry is not None
+
+    def remove_tool(self, tool_name: str) -> bool:
+        if self.tool_registry:
+            self.tool_registry.unregister(tool_name)
+            return True
+        return False
+
+    def list_tool(self) -> list:
+        """列出所有可用工具"""
+        if self.tool_registry:
+            return self.tool_registry.list_tools()
+        return []
