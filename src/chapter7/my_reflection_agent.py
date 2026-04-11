@@ -6,7 +6,6 @@ from hello_agents import HelloAgentsLLM
 from chapter7.base_agent import BaseAgent
 from chapter7.config import Config
 from chapter7.message import Message
-from my_reflection_agent import MyReflectionAgent
 
 DEFAULT_PROMPTS = {
     "initial": """
