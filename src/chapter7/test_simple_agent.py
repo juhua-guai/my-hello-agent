@@ -57,7 +57,7 @@ print(f"可用工具: {basic_agent.list_tools()}")
 
 
 def main():
-    # test3()
+    test3()
     pass
 
 
