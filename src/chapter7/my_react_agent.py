@@ -40,13 +40,16 @@ class MyReActAgent(ReActAgent):
             tools_desc = self.tool_registry.get_tools_description()
             history_str = "\n".join(self.current_history)
             prompt = self.prompt_template.format(tools=tools_desc, question=input_text, history=history_str, )
+            # print(f"构建提示词：{prompt}\n")
 
             # 2. 调用LLM
             messages = [{"role": "user", "content": prompt}]
             response_text = self.llm.invoke(messages, **kwargs)
+            # print(f"调用LLM：{response_text}\n")
 
             # 3. 解析输出
             thought, action = self._parse_output(response_text)
+            print(f"解析输出：{action}", end="\n")
 
             # 4. 检查完成条件
             if action and action.startswith("Finish"):
