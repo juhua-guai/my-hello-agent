@@ -1,7 +1,9 @@
 import os
 
+from dotenv import load_dotenv
 from hello_agents import ToolRegistry
 
+load_dotenv()
 
 class MyAdvancedSearchTool:
     """
