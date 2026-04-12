@@ -14,7 +14,7 @@ class ToolParameter(BaseModel):
     default: bool = False
 
 
-class Tool(ABC):
+class MyTool(ABC):
 
     def __init__(self, name: str, description: str):
         self.name = name
@@ -78,10 +78,10 @@ class Tool(ABC):
 
 class MyToolRegistry(ToolRegistry):
     def __init__(self):
-        self._tools: dict[str, Tool] = {}
+        self._tools: dict[str, MyTool] = {}
         self._functions: dict[str, dict[str, Any]] = {}
 
-    def register_tool(self, tool: Tool):
+    def register_tool(self, tool: MyTool):
         if tool.name in self._tools:
             print(f"⚠️ 警告:工具 '{tool.name}' 已存在，将被覆盖。")
         self._tools[tool.name] = tool
