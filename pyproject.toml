@@ -4,11 +4,11 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "google-search-results>=2.4.2",
-    "hello-agents==0.1.1",
+    "hello-agents[all]==0.2.0",
     "openai>=2.30.0",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.2",
-    "tavily-python==0.7.10",
+    "tavily-python==0.7.12",
 ]
 
 [project.scripts]
