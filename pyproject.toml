@@ -4,8 +4,8 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "google-search-results>=2.4.2",
-    "hello-agents[all]==0.2.0",
-    "openai>=2.30.0",
+    "hello-agents[all]==0.2.8",
+    "openai>=1.0.0,<2.0.0",
     "pydantic>=2.12.5",
     "python-dotenv>=1.2.2",
     "tavily-python==0.7.12",
