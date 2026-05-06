@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.13"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -1895,6 +1895,7 @@ dependencies = [
     { name = "openai" },
     { name = "pydantic" },
     { name = "python-dotenv" },
+    { name = "requests" },
     { name = "tavily-python" },
 ]
 
@@ -1905,6 +1906,7 @@ requires-dist = [
     { name = "openai", specifier = ">=1.0.0,<2.0.0" },
     { name = "pydantic", specifier = ">=2.12.5" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "requests", specifier = ">=2.33.1" },
     { name = "tavily-python", specifier = "==0.7.12" },
 ]
 
